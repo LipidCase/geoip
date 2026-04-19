@@ -1,6 +1,7 @@
 package maxmind
 
 import (
+	"bufio"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -36,6 +37,7 @@ func newGeoLite2ASNCSVIn(action lib.Action, data json.RawMessage) (lib.InputConv
 		IPv4File   string                 `json:"ipv4"`
 		IPv6File   string                 `json:"ipv6"`
 		Want       lib.WantedListExtended `json:"wantedList"`
+		WantURI    map[string]string      `json:"wantedListURI"`
 		OnlyIPType lib.IPType             `json:"onlyIPType"`
 	}
 
@@ -83,6 +85,28 @@ func newGeoLite2ASNCSVIn(action lib.Action, data json.RawMessage) (lib.InputConv
 		}
 
 		wantList[asn] = []string{"AS" + asn}
+	}
+
+	for list, uri := range tmp.WantURI {
+		list = strings.ToUpper(strings.TrimSpace(list))
+		uri = strings.TrimSpace(uri)
+		if list == "" || uri == "" {
+			continue
+		}
+
+		asnList, err := loadWantedASNList(uri)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, asn := range asnList {
+			if listArr, found := wantList[asn]; found {
+				listArr = append(listArr, list)
+				wantList[asn] = listArr
+			} else {
+				wantList[asn] = []string{list}
+			}
+		}
 	}
 
 	return &GeoLite2ASNCSVIn{
@@ -227,4 +251,72 @@ func (g *GeoLite2ASNCSVIn) process(file string, entries map[string]*lib.Entry) e
 	}
 
 	return nil
+}
+
+func loadWantedASNList(uri string) ([]string, error) {
+	var f io.ReadCloser
+	var err error
+	switch {
+	case strings.HasPrefix(strings.ToLower(uri), "http://"), strings.HasPrefix(strings.ToLower(uri), "https://"):
+		f, err = lib.GetRemoteURLReader(uri)
+	default:
+		f, err = os.Open(uri)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	asnList := make([]string, 0, 100)
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		asn := parseWantedASNLine(scanner.Text())
+		if asn != "" {
+			asnList = append(asnList, asn)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	if len(asnList) == 0 {
+		return nil, fmt.Errorf("❌ no ASN is generated from wantedListURI %s", uri)
+	}
+
+	return asnList, nil
+}
+
+func parseWantedASNLine(line string) string {
+	line = strings.TrimPrefix(strings.TrimSpace(line), "\ufeff")
+	if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "!") {
+		return ""
+	}
+
+	if text, _, found := strings.Cut(line, "//"); found {
+		line = text
+	}
+	line = strings.TrimSpace(line)
+
+	if strings.HasPrefix(strings.ToUpper(line), "IP-ASN,") {
+		parts := strings.SplitN(line, ",", 2)
+		if len(parts) != 2 {
+			return ""
+		}
+		line = strings.TrimSpace(parts[1])
+	}
+
+	line = strings.TrimPrefix(strings.ToLower(line), "as")
+	if line == "" {
+		return ""
+	}
+
+	for _, r := range line {
+		if r < '0' || r > '9' {
+			return ""
+		}
+	}
+
+	return line
 }

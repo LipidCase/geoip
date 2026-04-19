@@ -61,7 +61,7 @@ jobs:
       - name: Build geoip files
         run: |
           go build ./
-          ./geoip convert -c ./config.json
+          ./geoip convert -c ./config-cn-asn-mmdb.json
 
       - name: Verify mmdb files
         run: |
@@ -100,17 +100,22 @@ jobs:
       - name: Purge jsdelivr CDN
         run: |
           cd output || exit 1
-          for file in $(ls); do
+          for file in $(find . -type f); do
+            file="${file#./}"
             curl -i "https://purge.jsdelivr.net/gh/${{ github.repository }}@release/${file}"
           done
 
       - name: Remove some files to avoid publishing to GitHub release
         run: |
+          cd output || exit 1
+          zip -r ../cn-asn.zip ./cn-asn
+          cd .. || exit 1
           rm -rf ./output/*.{gz,zip}
           rm -rf ./output/GeoLite2-*.csv
           rm -rf ./output/GeoLite2-*.mmdb
           rm -rf ./output/GeoLite2-*.sha256sum
-          rm -rf ./output/{clash,dat,mrs,nginx,srs,surge,text}
+          rm -rf ./output/{clash,dat,mrs,nginx,srs,surge,text,cn-asn}
+          mv ./cn-asn.zip ./output/cn-asn.zip
 
       - name: Upload files to GitHub release
         env:

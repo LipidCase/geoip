@@ -1,0 +1,130 @@
+{
+  "input": [
+    {
+      "type": "maxmindGeoLite2CountryCSV",
+      "action": "add",
+      "args": {
+        "country": "./geolite2/GeoLite2-Country-Locations-en.csv",
+        "ipv4": "./geolite2/GeoLite2-Country-Blocks-IPv4.csv",
+        "ipv6": "./geolite2/GeoLite2-Country-Blocks-IPv6.csv"
+      }
+    },
+    {
+      "type": "cutter",
+      "action": "remove",
+      "args": {
+        "wantedList": ["cn"]
+      }
+    },
+    {
+      "type": "text",
+      "action": "add",
+      "args": {
+        "name": "cn",
+        "uri": "https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt",
+        "onlyIPType": "ipv4"
+      }
+    },
+    {
+      "type": "text",
+      "action": "add",
+      "args": {
+        "name": "cn",
+        "uri": "https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china.txt",
+        "onlyIPType": "ipv4"
+      }
+    },
+    {
+      "type": "text",
+      "action": "add",
+      "args": {
+        "name": "cn",
+        "uri": "https://raw.githubusercontent.com/gaoyifan/china-operator-ip/ip-lists/china6.txt",
+        "onlyIPType": "ipv6"
+      }
+    },
+    {
+      "type": "text",
+      "action": "add",
+      "args": {
+        "name": "cn",
+        "uri": "https://raw.githubusercontent.com/missuo/ASN-China/main/IP.China.list"
+      }
+    },
+    {
+      "type": "maxmindGeoLite2ASNCSV",
+      "action": "add",
+      "args": {
+        "ipv4": "./geolite2/GeoLite2-ASN-Blocks-IPv4.csv",
+        "ipv6": "./geolite2/GeoLite2-ASN-Blocks-IPv6.csv",
+        "wantedListURI": {
+          "cn": "https://raw.githubusercontent.com/VirgilClyne/GetSomeFries/refs/heads/main/ruleset/ASN.China.list"
+        }
+      }
+    },
+    {
+      "type": "private",
+      "action": "add"
+    }
+  ],
+  "output": [
+    {
+      "type": "maxmindMMDB",
+      "action": "output",
+      "args": {
+        "outputDir": "./output",
+        "outputName": "Country-with-china-asn.mmdb",
+        "sourceMMDBURI": "./output/GeoLite2-Country.mmdb",
+        "overwriteList": ["cn", "private"]
+      }
+    },
+    {
+      "type": "singboxSRS",
+      "action": "output",
+      "args": {
+        "outputDir": "./output/cn-asn/srs",
+        "wantedList": ["cn"]
+      }
+    },
+    {
+      "type": "mihomoMRS",
+      "action": "output",
+      "args": {
+        "outputDir": "./output/cn-asn/mrs",
+        "wantedList": ["cn"]
+      }
+    },
+    {
+      "type": "clashRuleSetClassical",
+      "action": "output",
+      "args": {
+        "outputDir": "./output/cn-asn/clash/classical",
+        "wantedList": ["cn"]
+      }
+    },
+    {
+      "type": "clashRuleSet",
+      "action": "output",
+      "args": {
+        "outputDir": "./output/cn-asn/clash/ipcidr",
+        "wantedList": ["cn"]
+      }
+    },
+    {
+      "type": "surgeRuleSet",
+      "action": "output",
+      "args": {
+        "outputDir": "./output/cn-asn/surge",
+        "wantedList": ["cn"]
+      }
+    },
+    {
+      "type": "text",
+      "action": "output",
+      "args": {
+        "outputDir": "./output/cn-asn/text",
+        "wantedList": ["cn"]
+      }
+    }
+  ]
+}
