@@ -31,32 +31,24 @@ jobs:
           echo "RELEASE_NAME=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
         shell: bash
 
-      - name: Download GeoLite2 databases
-        env:
-          LICENSE_KEY: ${{ secrets.MAXMIND_GEOLITE2_LICENSE }}
+      - name: Fetch GeoLite2 databases from upstream release
         run: |
-          mkdir -p output
-          curl -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=${LICENSE_KEY}&suffix=tar.gz" -o ./output/GeoLite2-ASN.tar.gz
-          curl -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN-CSV&license_key=${LICENSE_KEY}&suffix=zip" -o ./output/GeoLite2-ASN-CSV.zip
-          curl -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=${LICENSE_KEY}&suffix=tar.gz" -o ./output/GeoLite2-Country.tar.gz
-          curl -L "https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country-CSV&license_key=${LICENSE_KEY}&suffix=zip" -o ./output/GeoLite2-Country-CSV.zip
+          mkdir -p output geolite2 upstream-release
+          git clone --depth 1 --single-branch --branch release https://github.com/Loyalsoldier/geoip.git ./upstream-release
 
-      - name: Prepare GeoLite2 databases
-        run: |
-          cp ./output/{*.gz,*.zip} ./
-          unzip GeoLite2-Country-CSV.zip
-          unzip GeoLite2-ASN-CSV.zip
-          tar -xvzf GeoLite2-Country.tar.gz
-          tar -xvzf GeoLite2-ASN.tar.gz
+          cp ./upstream-release/GeoLite2-Country.mmdb ./output/
+          cp ./upstream-release/GeoLite2-ASN.mmdb ./output/
+          cp ./upstream-release/GeoLite2-Country-Blocks-IPv4.csv ./output/
+          cp ./upstream-release/GeoLite2-Country-Blocks-IPv6.csv ./output/
+          cp ./upstream-release/GeoLite2-Country-Locations-en.csv ./output/
+          cp ./upstream-release/GeoLite2-Country-Locations-zh-CN.csv ./output/
+          cp ./upstream-release/GeoLite2-ASN-Blocks-IPv4.csv ./output/
+          cp ./upstream-release/GeoLite2-ASN-Blocks-IPv6.csv ./output/
 
-          cp GeoLite2-Country_*/*.mmdb ./output/
-          cp GeoLite2-ASN_*/*.mmdb ./output/
-          cp GeoLite2-Country-CSV_*/{GeoLite2-Country-Blocks-*,GeoLite2-Country-Locations-en,GeoLite2-Country-Locations-zh-CN}.csv ./output/
-          cp GeoLite2-ASN-CSV_*/*.csv ./output/
-
-          mkdir -p geolite2
-          cp GeoLite2-Country-CSV_*/*.csv ./geolite2/
-          cp GeoLite2-ASN-CSV_*/*.csv ./geolite2/
+          cp ./upstream-release/GeoLite2-Country-Blocks-*.csv ./geolite2/
+          cp ./upstream-release/GeoLite2-Country-Locations-*.csv ./geolite2/
+          cp ./upstream-release/GeoLite2-ASN-Blocks-*.csv ./geolite2/
+          rm -rf ./upstream-release
 
       - name: Build geoip files
         run: |
