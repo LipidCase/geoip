@@ -60,6 +60,8 @@ jobs:
           ./geoip convert -c ./config-cn-asn-mmdb.json
 
       - name: Verify mmdb files
+        env:
+          GOTOOLCHAIN: auto
         run: |
           cd ./output || exit 1
           go install -v github.com/maxmind/mmdbverify@latest
